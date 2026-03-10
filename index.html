@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Convergence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F0E8;
+      --surface: #FDFAF4;
+      --ink: #1A1612;
+      --ink-muted: #6B6259;
+      --accent: #C8401A;
+      --accent-light: #F0DDD6;
+      --border: #D4CBC0;
+      --border-dark: #A89890;
+      --tag-bg: #E8E0D5;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 39px,
+          var(--border) 39px,
+          var(--border) 40px
+        );
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--ink);
+      color: var(--bg);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .header-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      height: 56px;
+    }
+
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+      color: var(--bg);
+      white-space: nowrap;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: #9A9088;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding-bottom: 2px;
+    }
+
+    .header-count {
+      margin-left: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: #9A9088;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ── COMPOSE ── */
+    .compose-area {
+      background: var(--surface);
+      border: 2px solid var(--ink);
+      border-top: none;
+      padding: 20px 24px 16px;
+      position: relative;
+    }
+
+    .compose-area::before {
+      content: 'NEW POST';
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 14px;
+    }
+
+    .compose-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .name-input {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border-dark);
+      background: var(--bg);
+      color: var(--ink);
+      width: 180px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .name-input:focus {
+      border-color: var(--accent);
+    }
+
+    .name-input::placeholder { color: var(--ink-muted); }
+
+    .post-textarea {
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border-dark);
+      background: var(--bg);
+      color: var(--ink);
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .post-textarea:focus { border-color: var(--accent); }
+    .post-textarea::placeholder { color: var(--ink-muted); }
+
+    .compose-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .char-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--ink-muted);
+    }
+
+    .char-count.warn { color: #C8401A; font-weight: 600; }
+
+    .submit-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 22px;
+      background: var(--accent);
+      color: white;
+      border: 2px solid var(--accent);
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+    }
+
+    .submit-btn:hover { background: #A8320E; border-color: #A8320E; }
+    .submit-btn:active { transform: scale(0.97); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      padding: 14px 0 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--ink-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    .filter-chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      padding: 4px 10px;
+      border: 1.5px solid var(--border-dark);
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      background: var(--ink);
+      color: var(--bg);
+      border-color: var(--ink);
+    }
+
+    /* ── FEED ── */
+    .feed {
+      padding: 24px 0 60px;
+    }
+
+    .post-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-left: 4px solid var(--border);
+      margin-bottom: 16px;
+      padding: 18px 20px 14px;
+      position: relative;
+      animation: slideIn 0.25s ease forwards;
+      transition: border-left-color 0.2s;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .post-card:hover { border-left-color: var(--accent); }
+
+    .post-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .post-author {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.05rem;
+      color: var(--ink);
+    }
+
+    .post-time {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--ink-muted);
+    }
+
+    .post-body {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 14px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .action-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--ink-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 0;
+      transition: color 0.12s;
+      user-select: none;
+    }
+
+    .action-btn:hover { color: var(--ink); }
+    .action-btn.liked { color: var(--accent); }
+    .action-btn.liked:hover { color: #A8320E; }
+
+    .action-btn svg { width: 13px; height: 13px; }
+
+    .delete-btn {
+      margin-left: auto;
+      color: var(--border-dark);
+    }
+
+    .delete-btn:hover { color: #C8401A; }
+
+    /* ── REPLY SECTION ── */
+    .reply-toggle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--ink-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 0;
+      transition: color 0.12s;
+    }
+
+    .reply-toggle:hover { color: var(--ink); }
+
+    .replies {
+      margin-top: 14px;
+      padding-left: 16px;
+      border-left: 2px solid var(--border);
+      display: none;
+    }
+
+    .replies.open { display: block; }
+
+    .reply-item {
+      padding: 10px 0 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .reply-item:last-child { border-bottom: none; }
+
+    .reply-author {
+      font-family: 'DM Serif Display', serif;
+      font-size: 0.85rem;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .reply-body {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .reply-time {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--ink-muted);
+      margin-top: 4px;
+    }
+
+    .reply-compose {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .reply-name-input {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border: 1.5px solid var(--border-dark);
+      background: var(--bg);
+      color: var(--ink);
+      width: 140px;
+      outline: none;
+    }
+
+    .reply-name-input:focus { border-color: var(--accent); }
+
+    .reply-text-input {
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border: 1.5px solid var(--border-dark);
+      background: var(--bg);
+      color: var(--ink);
+      flex: 1;
+      outline: none;
+    }
+
+    .reply-text-input:focus { border-color: var(--accent); }
+
+    .reply-submit {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .reply-submit:hover { background: var(--accent); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      border: 1.5px dashed var(--border-dark);
+      margin: 24px 0;
+    }
+
+    .empty-state p {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 1.2rem;
+      color: var(--ink-muted);
+      margin-bottom: 8px;
+    }
+
+    .empty-state small {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--border-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--ink);
+      color: var(--bg);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      padding: 10px 18px;
+      border-left: 3px solid var(--accent);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-dark); }
+
+    @media (max-width: 600px) {
+      .header-inner { height: 48px; }
+      .logo { font-size: 1.3rem; }
+      .tagline { display: none; }
+      .compose-row { flex-direction: column; }
+      .name-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">Conver<span>gence</span></div>
+    <div class="tagline">Public · No accounts · Just voices</div>
+    <div class="header-count" id="postCount">0 posts</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Compose -->
+  <div class="compose-area">
+    <div class="compose-row">
+      <input class="name-input" id="nameInput" type="text" placeholder="Your name" maxlength="40" autocomplete="off" />
+    </div>
+    <textarea class="post-textarea" id="postText" placeholder="What's converging in your mind?" maxlength="280"></textarea>
+    <div class="compose-footer">
+      <span class="char-count" id="charCount">280</span>
+      <button class="submit-btn" id="submitBtn" onclick="submitPost()">Post →</button>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar">
+    <span class="filter-label">Show</span>
+    <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-chip" onclick="setFilter('liked', this)">Liked</button>
+    <div id="authorFilters" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed" id="feed"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STATE ──
+  const STORAGE_KEY = 'convergence_posts_v2';
+  let posts = [];
+  let currentFilter = 'all';
+  let likedPosts = new Set(JSON.parse(localStorage.getItem('convergence_likes') || '[]'));
+
+  function savePosts() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+  }
+
+  function loadPosts() {
+    try {
+      posts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch { posts = []; }
+  }
+
+  function saveLikes() {
+    localStorage.setItem('convergence_likes', JSON.stringify([...likedPosts]));
+  }
+
+  // ── TIME ──
+  function timeAgo(ts) {
+    const diff = (Date.now() - ts) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function formatTime(ts) {
+    return new Date(ts).toLocaleString('en-US', {
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+
+  // ── CHAR COUNT ──
+  const postText = document.getElementById('postText');
+  const charCount = document.getElementById('charCount');
+  postText.addEventListener('input', () => {
+    const left = 280 - postText.value.length;
+    charCount.textContent = left;
+    charCount.className = 'char-count' + (left < 30 ? ' warn' : '');
+  });
+
+  // ── SUBMIT ──
+  function submitPost() {
+    const name = document.getElementById('nameInput').value.trim() || 'Anonymous';
+    const text = postText.value.trim();
+    if (!text) { showToast('Write something first.'); return; }
+
+    const post = {
+      id: Date.now() + Math.random().toString(36).slice(2),
+      author: name,
+      body: text,
+      ts: Date.now(),
+      likes: 0,
+      replies: []
+    };
+
+    posts.unshift(post);
+    savePosts();
+    postText.value = '';
+    charCount.textContent = '280';
+    charCount.className = 'char-count';
+    renderFeed();
+    updateAuthorFilters();
+    showToast('Posted.');
+  }
+
+  // Allow Enter+Ctrl or Cmd to submit
+  postText.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitPost();
+  });
+
+  // ── LIKE ──
+  function toggleLike(id) {
+    const post = posts.find(p => p.id === id);
+    if (!post) return;
+    if (likedPosts.has(id)) {
+      likedPosts.delete(id);
+      post.likes = Math.max(0, post.likes - 1);
+    } else {
+      likedPosts.add(id);
+      post.likes++;
+    }
+    savePosts();
+    saveLikes();
+    renderFeed();
+  }
+
+  // ── DELETE ──
+  function deletePost(id) {
+    if (!confirm('Delete this post?')) return;
+    posts = posts.filter(p => p.id !== id);
+    savePosts();
+    renderFeed();
+    updateAuthorFilters();
+    showToast('Deleted.');
+  }
+
+  // ── REPLY ──
+  function toggleReplies(id) {
+    const el = document.getElementById('replies-' + id);
+    el.classList.toggle('open');
+    const btn = document.getElementById('replyToggle-' + id);
+    const count = posts.find(p => p.id === id)?.replies.length || 0;
+    btn.textContent = el.classList.contains('open')
+      ? '▲ Hide replies'
+      : `▼ ${count} ${count === 1 ? 'reply' : 'replies'}`;
+  }
+
+  function submitReply(postId) {
+    const nameEl = document.getElementById('rName-' + postId);
+    const textEl = document.getElementById('rText-' + postId);
+    const name = (nameEl.value.trim()) || 'Anonymous';
+    const text = textEl.value.trim();
+    if (!text) return;
+
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    post.replies.push({ id: Date.now(), author: name, body: text, ts: Date.now() });
+    savePosts();
+    textEl.value = '';
+    renderFeed();
+    // Re-open replies
+    const el = document.getElementById('replies-' + postId);
+    if (el) el.classList.add('open');
+  }
+
+  // ── FILTER ──
+  function setFilter(val, el) {
+    currentFilter = val;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderFeed();
+  }
+
+  function updateAuthorFilters() {
+    const authors = [...new Set(posts.map(p => p.author))];
+    const container = document.getElementById('authorFilters');
+    container.innerHTML = authors.map(a =>
+      `<button class="filter-chip${currentFilter === 'author:' + a ? ' active' : ''}" onclick="setFilter('author:${escHtml(a)}', this)">${escHtml(a)}</button>`
+    ).join('');
+  }
+
+  // ── RENDER ──
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderFeed() {
+    let visible = posts;
+
+    if (currentFilter === 'liked') {
+      visible = posts.filter(p => likedPosts.has(p.id));
+    } else if (currentFilter.startsWith('author:')) {
+      const author = currentFilter.slice(7);
+      visible = posts.filter(p => p.author === author);
+    }
+
+    const feed = document.getElementById('feed');
+    document.getElementById('postCount').textContent = posts.length + (posts.length === 1 ? ' post' : ' posts');
+
+    if (visible.length === 0) {
+      feed.innerHTML = `<div class="empty-state">
+        <p>${currentFilter === 'liked' ? 'No liked posts yet.' : currentFilter.startsWith('author:') ? 'No posts from this author.' : 'The feed is empty.'}</p>
+        <small>${currentFilter === 'all' ? 'Be the first to post.' : ''}</small>
+      </div>`;
+      return;
+    }
+
+    feed.innerHTML = visible.map(post => {
+      const liked = likedPosts.has(post.id);
+      const replyCount = post.replies.length;
+
+      const repliesHtml = post.replies.map(r => `
+        <div class="reply-item">
+          <div class="reply-author">${escHtml(r.author)}</div>
+          <div class="reply-body">${escHtml(r.body)}</div>
+          <div class="reply-time">${timeAgo(r.ts)}</div>
+        </div>
+      `).join('');
+
+      return `
+      <div class="post-card" id="post-${post.id}">
+        <div class="post-meta">
+          <span class="post-author">${escHtml(post.author)}</span>
+          <span class="post-time" title="${formatTime(post.ts)}">${timeAgo(post.ts)}</span>
+        </div>
+        <div class="post-body">${escHtml(post.body)}</div>
+        <div class="post-actions">
+          <button class="action-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+            <svg viewBox="0 0 24 24" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            ${post.likes > 0 ? post.likes : ''}
+          </button>
+          <button class="action-btn reply-toggle" id="replyToggle-${post.id}" onclick="toggleReplies('${post.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            ${replyCount > 0 ? `▼ ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}` : 'Reply'}
+          </button>
+          <button class="action-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <path d="M10 11v6M14 11v6"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="replies" id="replies-${post.id}">
+          ${repliesHtml}
+          <div class="reply-compose">
+            <input class="reply-name-input" id="rName-${post.id}" type="text" placeholder="Your name" maxlength="40" />
+            <input class="reply-text-input" id="rText-${post.id}" type="text" placeholder="Write a reply…" maxlength="280"
+              onkeydown="if(event.key==='Enter') submitReply('${post.id}')" />
+            <button class="reply-submit" onclick="submitReply('${post.id}')">↵</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── INIT ──
+  loadPosts();
+  renderFeed();
+  updateAuthorFilters();
+
+  // Refresh timestamps every minute
+  setInterval(() => renderFeed(), 60000);
+</script>
+</body>
+</html>
